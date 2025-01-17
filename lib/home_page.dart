@@ -35,7 +35,25 @@ class _HomePageState extends State<HomePage> {
   }
 
 Widget ui() {
-   if (cameraController == null || !cameraController!.value.isInitialized);
+   if (cameraController == null || !cameraController!.value.isInitialized) {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: Colors.red,
+      ),
+    );
+   }
+   return SafeArea(
+    child: Column(
+      children: [
+        //camera preview
+        CameraPreview(cameraController!),
+        ElevatedButton(
+          onPressed: () {},
+          child: Text("Capture"),
+          ), 
+      ],
+    ),
+  );
 }
 
   Future<void> setupCameraController() async{
