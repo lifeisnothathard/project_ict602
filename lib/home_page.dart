@@ -1,88 +1,93 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+class HomePage extends StatefulWidget {
+  final List<CameraDescription> cameras; // Add this field to accept cameras
 
-class HomePage extends StatefulWidget{
-  const HomePage ({super.key});
+  const HomePage({super.key, required this.cameras}); // Add this constructor to pass cameras
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-
 class _HomePageState extends State<HomePage> {
-  List<CameraDescription> cameras = [];
   CameraController? cameraController;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    setupCameraController();
+    setupCameraController(); // Call setupCameraController to initialize the camera
+  }
+
+  Future<void> setupCameraController() async {
+    try {
+      if (widget.cameras.isNotEmpty) {
+        setState(() {
+          cameraController = CameraController(
+            widget.cameras.first,
+            ResolutionPreset.high,
+          );
+        });
+        await cameraController!.initialize();
+        setState(() {});
+      } else {
+        showError("No cameras available on this device.");
+      }
+    } catch (e) {
+      showError("Error initializing the camera: $e");
+    }
+  }
+
+  void showError(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   void dispose() {
-    //dispose camera controller
     cameraController?.dispose();
-    // TODO: implement dispose
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       body: ui(),
+      body: cameraController == null || !cameraController!.value.isInitialized
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Colors.red,
+              ),
+            )
+          : SafeArea(
+              child: Column(
+                children: [
+                  CameraPreview(cameraController!), // Camera preview
+                  ElevatedButton(
+                    onPressed: () {},
+                    child: const Text("Capture"),
+                  ),
+                ],
+              ),
+            ),
     );
   }
-
-Widget ui() {
-   if (cameraController == null || !cameraController!.value.isInitialized) {
-    return const Center(
-      child: CircularProgressIndicator(
-        color: Colors.red,
-      ),
-    );
-   }
-   return SafeArea(
-    child: Column(
-      children: [
-        //camera preview
-        CameraPreview(cameraController!),
-        ElevatedButton(
-          onPressed: () {},
-          child: Text("Capture"),
-          ), 
-      ],
-    ),
-  );
 }
 
-  Future<void> setupCameraController() async{
-    try{
-      //fetch available camera
-      final _cameras = await availableCameras();
-      if (_cameras.isNotEmpty) {
-        setState(() {
-          cameras = _cameras;
-          cameraController = CameraController(_cameras.first, ResolutionPreset.high,);
-        });
-        //initialize the camera controller
-        await cameraController!.initialize();
-        //update UI after initialization
-        setState(() {
-          
-        });
-       } else {
-        showError("No Camera available on this device");
-       }
-
-    } catch(e) {
-      showError("Error initializing camera: $e");
-    }
-  }
-  void showError(String message) {
-  showDialog(context: context, builder: (context) => AlertDialog(title: Text("Error"), content: Text(message), actions: [TextButton(onPressed: ()=> Navigator.of(context).pop, child: Text("Close"),)],),);
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final cameras = await availableCameras(); // Fetch available cameras
+  runApp(MaterialApp(
+    home: HomePage(cameras: cameras), // Pass the list of cameras here
+  ));
 }
-}
-
-

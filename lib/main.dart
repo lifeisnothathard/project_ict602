@@ -2,11 +2,11 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart'; // Import your home_page.dart file
 
-List<CameraDescription>? cameras;
+List<CameraDescription>? cameras; // Global list of available cameras
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  cameras = await availableCameras();
+  cameras = await availableCameras(); // Fetch the list of available cameras
   runApp(const MyApp());
 }
 
@@ -50,12 +50,30 @@ class StartPage extends StatelessWidget {
                   textStyle: const TextStyle(fontSize: 18),
                 ),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomePageWrapper(cameras: cameras!),
-                    ),
-                  );
+                  if (cameras != null && cameras!.isNotEmpty) {
+                    // Only navigate to HomePage if cameras are available
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HomePageWrapper(cameras: cameras!),
+                      ),
+                    );
+                  } else {
+                    // Show error if no cameras are available
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Error"),
+                        content: const Text("No cameras available on this device."),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text("Close"),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                 },
                 child: const Text("Start"),
               ),
@@ -74,6 +92,6 @@ class HomePageWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const HomePage(); // Use HomePage for the main camera functionality
+    return HomePage(cameras: cameras); // Pass cameras to HomePage
   }
 }
