@@ -1,10 +1,11 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'dart:io'; // for file handling
 
 class HomePage extends StatefulWidget {
-  final List<CameraDescription> cameras; // Add this field to accept cameras
+  final List<CameraDescription> cameras;
 
-  const HomePage({super.key, required this.cameras}); // Add this constructor to pass cameras
+  const HomePage({super.key, required this.cameras}); // Constructor to pass cameras
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -12,13 +13,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   CameraController? cameraController;
+  XFile? imageFile; // Variable to hold the captured image
 
   @override
   void initState() {
     super.initState();
-    setupCameraController(); // Call setupCameraController to initialize the camera
+    setupCameraController(); // Initialize camera controller
   }
 
+  // Set up camera controller
   Future<void> setupCameraController() async {
     try {
       if (widget.cameras.isNotEmpty) {
@@ -38,6 +41,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Show error message
   void showError(String message) {
     showDialog(
       context: context,
@@ -54,9 +58,27 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Capture the photo
+  Future<void> takePicture() async {
+    if (cameraController == null || !cameraController!.value.isInitialized) {
+      showError("Camera is not initialized.");
+      return;
+    }
+
+    try {
+      final XFile file = await cameraController!.takePicture();
+
+      setState(() {
+        imageFile = file; // Store the captured image file
+      });
+    } catch (e) {
+      showError("Error capturing the image: $e");
+    }
+  }
+
   @override
   void dispose() {
-    cameraController?.dispose();
+    cameraController?.dispose(); // Dispose the camera when done
     super.dispose();
   }
 
@@ -73,10 +95,23 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 children: [
                   CameraPreview(cameraController!), // Camera preview
-                  ElevatedButton(
-                    onPressed: () {},
-                    child: const Text("Capture"),
+                  const SizedBox(height: 16),
+                  // Camera icon button
+                  IconButton(
+                    icon: const Icon(Icons.camera_alt, size: 40), // Camera icon with size 40
+                    onPressed: takePicture, // Capture the photo on press
+                    tooltip: "Capture", // Tooltip when user long-presses
                   ),
+                  if (imageFile != null) // Display captured image if available
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Image.file(
+                        File(imageFile!.path),
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover, // Image fit for the preview
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -88,6 +123,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final cameras = await availableCameras(); // Fetch available cameras
   runApp(MaterialApp(
-    home: HomePage(cameras: cameras), // Pass the list of cameras here
+    home: HomePage(cameras: cameras), // Pass cameras to the HomePage
   ));
 }
