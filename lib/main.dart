@@ -36,7 +36,7 @@ class StartPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                "Welcome to the Camera App",
+                "Welcome to the SnapFrame App",
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

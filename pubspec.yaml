@@ -31,7 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
   camera: ^0.10.0+2  # or latest version
-  html: ^0.15.0
 
 
 
@@ -66,10 +65,14 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # Add your assets here
+  assets:
+    - assets/gold.png
+    - assets/wooden.png
+    - assets/love.png
+    - assets/nature.png
+    - assets/hello kitty.png
+    - assets/flower.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

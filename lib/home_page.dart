@@ -128,6 +128,43 @@ class _HomePageState extends State<HomePage> {
                 Navigator.of(context).pop();
               },
             ),
+            // New Frame Options
+            ListTile(
+              title: const Text("Love Frame"),
+              onTap: () {
+                setState(() {
+                  selectedFrame = 'Love';
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              title: const Text("Nature Frame"),
+              onTap: () {
+                setState(() {
+                  selectedFrame = 'Nature';
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              title: const Text("Hello Kitty Frame"),
+              onTap: () {
+                setState(() {
+                  selectedFrame = 'Hello Kitty';
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              title: const Text("Flower Frame"),
+              onTap: () {
+                setState(() {
+                  selectedFrame = 'Flower';
+                });
+                Navigator.of(context).pop();
+              },
+            ),
           ],
         ),
       ),
@@ -136,58 +173,63 @@ class _HomePageState extends State<HomePage> {
 
   // Apply the selected frame to the image
   Widget applyFrame(XFile image) {
-    if (kIsWeb) {
-      // For web, use Image.memory to display the image
-      return FutureBuilder<Uint8List>(
-        future: image.readAsBytes(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-            return Container(
-              padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: selectedFrame == 'Gold'
-                      ? Colors.yellow
-                      : selectedFrame == 'Wooden'
-                          ? Colors.brown
-                          : Colors.transparent,
-                  width: selectedFrame == 'Gold' ? 5 : 8,
-                ),
-              ),
-              child: Image.memory(
-                snapshot.data!,
-                width: 200,
-                height: 200,
-                fit: BoxFit.cover,
-              ),
-            );
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      );
-    } else {
-      // For mobile, use Image.file
-      return Container(
-        padding: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: selectedFrame == 'Gold'
-                ? Colors.yellow
-                : selectedFrame == 'Wooden'
-                    ? Colors.brown
-                    : Colors.transparent,
-            width: selectedFrame == 'Gold' ? 5 : 8,
-          ),
-        ),
-        child: Image.file(
-          File(image.path),
-          width: 200,
-          height: 200,
-          fit: BoxFit.cover,
-        ),
-      );
+    String frameImagePath = '';
+    switch (selectedFrame) {
+      case 'Gold':
+        frameImagePath = 'assets/gold.png';
+        break;
+      case 'Wooden':
+        frameImagePath = 'assets/wooden.png';
+        break;
+      case 'Love':
+        frameImagePath = 'assets/love.png';
+        break;
+      case 'Nature':
+        frameImagePath = 'assets/nature.png';
+        break;
+      case 'Hello Kitty':
+        frameImagePath = 'assets/hello kitty.png';
+        break;
+      case 'Flower':
+        frameImagePath = 'assets/flower.png';
+        break;
+      default:
+        frameImagePath = '';
     }
+
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        image: frameImagePath.isNotEmpty
+            ? DecorationImage(
+                image: AssetImage(frameImagePath),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      child: kIsWeb
+          ? FutureBuilder<Uint8List>(
+              future: image.readAsBytes(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+                  return Image.memory(
+                    snapshot.data!,
+                    width: 180,
+                    height: 180,
+                    fit: BoxFit.cover,
+                  );
+                } else {
+                  return const Center(child: CircularProgressIndicator());
+                }
+              },
+            )
+          : Image.file(
+              File(image.path),
+              width: 180,
+              height: 180,
+              fit: BoxFit.cover,
+            ),
+    );
   }
 
   @override
