@@ -1,13 +1,14 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'dart:html'; // For web download handling
 import 'dart:io'; // For mobile file handling
 import 'dart:typed_data'; // For web image bytes
 
 class HomePage extends StatefulWidget {
   final List<CameraDescription> cameras;
 
-  const HomePage({super.key, required this.cameras});
+  const HomePage({Key? key, required this.cameras}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -171,65 +172,75 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Apply the selected frame to the image
-  Widget applyFrame(XFile image) {
-    String frameImagePath = '';
-    switch (selectedFrame) {
-      case 'Gold':
-        frameImagePath = 'assets/gold.png';
-        break;
-      case 'Wooden':
-        frameImagePath = 'assets/wooden.png';
-        break;
-      case 'Love':
-        frameImagePath = 'assets/love.png';
-        break;
-      case 'Nature':
-        frameImagePath = 'assets/nature.png';
-        break;
-      case 'Hello Kitty':
-        frameImagePath = 'assets/hello kitty.png';
-        break;
-      case 'Flower':
-        frameImagePath = 'assets/flower.png';
-        break;
-      default:
-        frameImagePath = '';
+Widget applyFrame(XFile image) {
+  String frameImagePath = '';
+  switch (selectedFrame) {
+    case 'Gold':
+      frameImagePath = 'assets/gold.png';
+      break;
+    case 'Wooden':
+      frameImagePath = 'assets/wooden.png';
+      break;
+    case 'Love':
+      frameImagePath = 'assets/love.png';
+      break;
+    case 'Nature':
+      frameImagePath = 'assets/nature.png';
+      break;
+    case 'Hello Kitty':
+      frameImagePath = 'assets/hello kitty.png';
+      break;
+    case 'Flower':
+      frameImagePath = 'assets/flower.png';
+      break;
+    default:
+      frameImagePath = '';
+  }
+
+  return Container(
+    padding: const EdgeInsets.all(8.0),
+    decoration: BoxDecoration(
+      image: frameImagePath.isNotEmpty
+          ? DecorationImage(
+              image: AssetImage(frameImagePath),
+              fit: BoxFit.cover,
+            )
+          : null,
+    ),
+    child: FutureBuilder<Uint8List>(
+      future: image.readAsBytes(),  // Works for both web and mobile
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+          return Image.memory(
+            snapshot.data!,
+            width: 180,
+            height: 180,
+            fit: BoxFit.cover,
+          );
+        } else {
+          return const Center(child: CircularProgressIndicator());
+        }
+      },
+    ),
+  );
+}
+
+
+  void saveImage() async {
+    if (imageFile == null) {
+      showError("No image to save.");
+      return;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        image: frameImagePath.isNotEmpty
-            ? DecorationImage(
-                image: AssetImage(frameImagePath),
-                fit: BoxFit.cover,
-              )
-            : null,
-      ),
-      child: kIsWeb
-          ? FutureBuilder<Uint8List>(
-              future: image.readAsBytes(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                  return Image.memory(
-                    snapshot.data!,
-                    width: 180,
-                    height: 180,
-                    fit: BoxFit.cover,
-                  );
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
-              },
-            )
-          : Image.file(
-              File(image.path),
-              width: 180,
-              height: 180,
-              fit: BoxFit.cover,
-            ),
-    );
+    // Create a Blob URL for the image and trigger download
+    final bytes = await imageFile!.readAsBytes();
+    final blob = Blob([bytes]);
+    final url = Url.createObjectUrlFromBlob(blob);
+    final anchor = AnchorElement(href: url)
+      ..target = 'blank'
+      ..download = 'captured_image.jpg'
+      ..click();
+    Url.revokeObjectUrl(url); // Free up memory
   }
 
   @override
@@ -271,8 +282,14 @@ class _HomePageState extends State<HomePage> {
                         child: const Text("Choose Frame"),
                       ),
                       const SizedBox(height: 16),
-                      // Display captured image with selected frame if available
-                      if (imageFile != null) applyFrame(imageFile!),
+                      if (imageFile != null) ...[
+                        applyFrame(imageFile!),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: saveImage,
+                          child: const Text("Save Image"),
+                        ),
+                      ],
                     ],
                   ),
                 ),
