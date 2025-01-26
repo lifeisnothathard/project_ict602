@@ -1,13 +1,12 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // For kIsWeb
-import 'dart:io'; // For mobile file handling
-import 'dart:typed_data'; // For web image bytes
+import 'dart:html'; // For web download handling
+import 'dart:typed_data'; // For Uint8List
 
 class HomePage extends StatefulWidget {
   final List<CameraDescription> cameras;
 
-  const HomePage({super.key, required this.cameras});
+  const HomePage({Key? key, required this.cameras}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -15,17 +14,17 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   CameraController? cameraController;
-  XFile? imageFile; // To store the captured image
+  Uint8List? imageBytes; // For storing the captured image bytes
   String selectedFrame = 'None'; // To store the selected frame design
-  bool _isLoading = false; // To manage loading state
+  bool _isLoading = false; // For managing loading state
 
   @override
   void initState() {
     super.initState();
-    setupCameraController(); // Initialize the camera
+    setupCameraController();
   }
 
-  // Set up the camera controller
+  // Initialize the camera controller
   Future<void> setupCameraController() async {
     try {
       if (widget.cameras.isNotEmpty) {
@@ -41,7 +40,7 @@ class _HomePageState extends State<HomePage> {
           _isLoading = false;
         });
       } else {
-        showError("No cameras available on this device.");
+        showError("No cameras are available.");
       }
     } catch (e) {
       showError("Error initializing the camera: $e");
@@ -51,7 +50,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Show error message
+  // Show error dialog
   void showError(String message) {
     showDialog(
       context: context,
@@ -68,7 +67,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Capture the picture
+  // Capture the image and convert it to bytes for web
   Future<void> takePicture() async {
     if (cameraController == null || !cameraController!.value.isInitialized) {
       showError("Camera is not initialized.");
@@ -80,10 +79,14 @@ class _HomePageState extends State<HomePage> {
         _isLoading = true;
       });
       final XFile file = await cameraController!.takePicture();
+      final Uint8List bytes = await file.readAsBytes();
       setState(() {
-        imageFile = file; // Store the captured image
+        imageBytes = bytes;
         _isLoading = false;
       });
+
+      // Debug: Print confirmation that imageBytes is set
+      print("Image captured and imageBytes set: ${imageBytes != null}");
     } catch (e) {
       showError("Error capturing the image: $e");
       setState(() {
@@ -92,7 +95,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Show frame options and let the user select one
+  // Show frame options
   void showFrameOptions() {
     showDialog(
       context: context,
@@ -135,59 +138,46 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Apply the selected frame to the image
-  Widget applyFrame(XFile image) {
-    if (kIsWeb) {
-      // For web, use Image.memory to display the image
-      return FutureBuilder<Uint8List>(
-        future: image.readAsBytes(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-            return Container(
-              padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: selectedFrame == 'Gold'
-                      ? Colors.yellow
-                      : selectedFrame == 'Wooden'
-                          ? Colors.brown
-                          : Colors.transparent,
-                  width: selectedFrame == 'Gold' ? 5 : 8,
-                ),
-              ),
-              child: Image.memory(
-                snapshot.data!,
-                width: 200,
-                height: 200,
-                fit: BoxFit.cover,
-              ),
-            );
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      );
-    } else {
-      // For mobile, use Image.file
-      return Container(
-        padding: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: selectedFrame == 'Gold'
-                ? Colors.yellow
-                : selectedFrame == 'Wooden'
-                    ? Colors.brown
-                    : Colors.transparent,
-            width: selectedFrame == 'Gold' ? 5 : 8,
-          ),
+  Widget applyFrame(Uint8List imageBytes) {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: selectedFrame == 'Gold'
+              ? Colors.yellow
+              : selectedFrame == 'Wooden'
+                  ? Colors.brown
+                  : Colors.transparent,
+          width: selectedFrame == 'Gold' ? 5 : 8,
         ),
-        child: Image.file(
-          File(image.path),
-          width: 200,
-          height: 200,
-          fit: BoxFit.cover,
-        ),
-      );
+      ),
+      child: Image.memory(
+        imageBytes,
+        width: 200,
+        height: 200,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  // Save the image by triggering a download in the browser
+  void saveImage() {
+    if (imageBytes == null) {
+      showError("No image to save.");
+      return;
     }
+
+    // Debug: Print confirmation that saveImage is called
+    print("Save Image button pressed");
+
+    // Create a Blob URL for the image and trigger download
+    final blob = Blob([imageBytes!]);
+    final url = Url.createObjectUrlFromBlob(blob);
+    final anchor = AnchorElement(href: url)
+      ..target = 'blank'
+      ..download = 'captured_image.jpg'
+      ..click();
+    Url.revokeObjectUrl(url); // Free up memory
   }
 
   @override
@@ -200,37 +190,34 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Colors.red,
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : cameraController == null || !cameraController!.value.isInitialized
-              ? const Center(
-                  child: Text("Camera not initialized"),
-                )
+              ? const Center(child: Text("Camera not initialized"))
               : SafeArea(
                   child: Column(
                     children: [
                       Expanded(
-                        child: CameraPreview(cameraController!), // Camera preview
+                        child: CameraPreview(cameraController!),
                       ),
                       const SizedBox(height: 16),
-                      // Camera icon button
                       IconButton(
-                        icon: const Icon(Icons.camera_alt, size: 40), // Camera icon
-                        onPressed: takePicture, // Capture photo on press
-                        tooltip: "Capture", // Tooltip
+                        icon: const Icon(Icons.camera_alt, size: 40),
+                        onPressed: takePicture,
                       ),
                       const SizedBox(height: 16),
-                      // Button to select the frame
                       ElevatedButton(
-                        onPressed: showFrameOptions, // Show frame options dialog
+                        onPressed: showFrameOptions,
                         child: const Text("Choose Frame"),
                       ),
                       const SizedBox(height: 16),
-                      // Display captured image with selected frame if available
-                      if (imageFile != null) applyFrame(imageFile!),
+                      if (imageBytes != null) ...[
+                        applyFrame(imageBytes!),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: saveImage,
+                          child: const Text("Save Image"),
+                        ),
+                      ],
                     ],
                   ),
                 ),
