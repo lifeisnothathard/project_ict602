@@ -1,7 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart'; // Import your home_page.dart file
-import 'login.dart'; // Import your login.dart file
 
 List<CameraDescription>? cameras;
 
@@ -19,11 +18,51 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      initialRoute: '/login', // Set login as the initial screen
-      routes: {
-        '/login': (context) => const LoginPage(), // Login screen route
-        '/home': (context) => HomePageWrapper(cameras: cameras!), // HomePage route
-      },
+      home: const StartPage(), // Start with the Start Page
+    );
+  }
+}
+
+class StartPage extends StatelessWidget {
+  const StartPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "Welcome to the Camera App",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HomePageWrapper(cameras: cameras!),
+                    ),
+                  );
+                },
+                child: const Text("Start"),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
