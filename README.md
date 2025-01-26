@@ -1,6 +1,15 @@
 # project_ict602
 
-A new Flutter project.
+SnappFrame app.
+
+# Group Members
+1. Nurul Akmal Shafiqah
+2. Nureen Aleesya
+3. Syafiqah Nadhirah
+4. Nurqurratu Adilah
+
+# About this project
+We are building a camera app that could take picture, store picture, choose design frame, save and share.
 
 ## Getting Started
 
