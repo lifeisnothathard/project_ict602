@@ -1,69 +1,40 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'home_page.dart'; // Import your home_page.dart file
+import 'login.dart'; // Import your login.dart file
 
 List<CameraDescription>? cameras;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   cameras = await availableCameras();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: CameraExample(),
+      initialRoute: '/login', // Set login as the initial screen
+      routes: {
+        '/login': (context) => const LoginPage(), // Login screen route
+        '/home': (context) => HomePageWrapper(cameras: cameras!), // HomePage route
+      },
     );
   }
 }
 
-class CameraExample extends StatefulWidget {
-  @override
-  _CameraExampleState createState() => _CameraExampleState();
-}
+class HomePageWrapper extends StatelessWidget {
+  final List<CameraDescription> cameras;
 
-class _CameraExampleState extends State<CameraExample> {
-  late CameraController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = CameraController(cameras![0], ResolutionPreset.high);
-    _controller.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const HomePageWrapper({super.key, required this.cameras});
 
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) {
-      return Container();
-    }
-    return Scaffold(
-      appBar: AppBar(title: Text('Camera Example')),
-      body: CameraPreview(_controller),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.camera_alt),
-        onPressed: () async {
-          try {
-            await _controller.takePicture();
-            print('Picture taken!');
-          } catch (e) {
-            print(e);
-          }
-        },
-      ),
-    );
+    return const HomePage(); // Use HomePage for the main camera functionality
   }
 }
