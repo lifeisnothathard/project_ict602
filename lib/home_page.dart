@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'dart:html'; // For web download handling
 import 'dart:io'; // For mobile file handling
 import 'dart:typed_data'; // For web image bytes
+import 'package:social_sharing_plus/social_sharing_plus.dart'; // Import the sharing package
 
 class HomePage extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -19,6 +20,7 @@ class _HomePageState extends State<HomePage> {
   XFile? imageFile; // To store the captured image
   String selectedFrame = 'None'; // To store the selected frame design
   bool _isLoading = false; // To manage loading state
+  String? savedImagePath; // To store the path of the saved image
 
   @override
   void initState() {
@@ -172,60 +174,61 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-Widget applyFrame(XFile image) {
-  String frameImagePath = '';
-  switch (selectedFrame) {
-    case 'Gold':
-      frameImagePath = 'assets/gold.png';
-      break;
-    case 'Wooden':
-      frameImagePath = 'assets/wooden.png';
-      break;
-    case 'Love':
-      frameImagePath = 'assets/love.png';
-      break;
-    case 'Nature':
-      frameImagePath = 'assets/nature.png';
-      break;
-    case 'Hello Kitty':
-      frameImagePath = 'assets/hello kitty.png';
-      break;
-    case 'Flower':
-      frameImagePath = 'assets/flower.png';
-      break;
-    default:
-      frameImagePath = '';
+  // Apply frame to the captured image
+  Widget applyFrame(XFile image) {
+    String frameImagePath = '';
+    switch (selectedFrame) {
+      case 'Gold':
+        frameImagePath = 'assets/gold.png';
+        break;
+      case 'Wooden':
+        frameImagePath = 'assets/wooden.png';
+        break;
+      case 'Love':
+        frameImagePath = 'assets/love.png';
+        break;
+      case 'Nature':
+        frameImagePath = 'assets/nature.png';
+        break;
+      case 'Hello Kitty':
+        frameImagePath = 'assets/hello kitty.png';
+        break;
+      case 'Flower':
+        frameImagePath = 'assets/flower.png';
+        break;
+      default:
+        frameImagePath = '';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        image: frameImagePath.isNotEmpty
+            ? DecorationImage(
+                image: AssetImage(frameImagePath),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      child: FutureBuilder<Uint8List>(
+        future: image.readAsBytes(),  // Works for both web and mobile
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+            return Image.memory(
+              snapshot.data!,
+              width: 180,
+              height: 180,
+              fit: BoxFit.cover,
+            );
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    );
   }
 
-  return Container(
-    padding: const EdgeInsets.all(8.0),
-    decoration: BoxDecoration(
-      image: frameImagePath.isNotEmpty
-          ? DecorationImage(
-              image: AssetImage(frameImagePath),
-              fit: BoxFit.cover,
-            )
-          : null,
-    ),
-    child: FutureBuilder<Uint8List>(
-      future: image.readAsBytes(),  // Works for both web and mobile
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-          return Image.memory(
-            snapshot.data!,
-            width: 180,
-            height: 180,
-            fit: BoxFit.cover,
-          );
-        } else {
-          return const Center(child: CircularProgressIndicator());
-        }
-      },
-    ),
-  );
-}
-
-
+  // Save the image with the selected frame
   void saveImage() async {
     if (imageFile == null) {
       showError("No image to save.");
@@ -241,6 +244,37 @@ Widget applyFrame(XFile image) {
       ..download = 'captured_image.jpg'
       ..click();
     Url.revokeObjectUrl(url); // Free up memory
+
+    // Store the saved image path for sharing
+    savedImagePath = url; // Store the URL for sharing
+  }
+
+  // Share the saved image
+  void shareImage() async {
+    if (savedImagePath == null) {
+      showError("No image to share.");
+      return;
+    }
+
+    String content = "Check out this image!";
+    List<String> mediaPaths = [savedImagePath!]; // Use the saved image path
+
+    try {
+      await SocialSharingPlus.shareToSocialMediaWithMultipleMedia(
+        SocialPlatform.facebook, // Change to desired platform
+        media: mediaPaths,
+        content: content,
+        isOpenBrowser: false,
+        onAppNotInstalled: () {
+          // Handle app not installed case
+        },
+      );
+      // Show success message
+      print("Image shared successfully!");
+    } catch (e) {
+      // Handle error
+      showError("Error sharing image: $e");
+    }
   }
 
   @override
@@ -288,6 +322,11 @@ Widget applyFrame(XFile image) {
                         ElevatedButton(
                           onPressed: saveImage,
                           child: const Text("Save Image"),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: shareImage, // Share image button
+                          child: const Text("Share Image"),
                         ),
                       ],
                     ],
