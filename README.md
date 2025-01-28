@@ -9,7 +9,7 @@ SnappFrame app.
 4. Nurqurratu Adilah
 
 # About this project
-We are building a camera app that could take picture, store picture, choose design frame, save and share.
+We are building a camera app that could take picture, store picture, choose design frame, save and share using social media.
 
 ## Getting Started
 
