@@ -9,7 +9,7 @@ import 'package:social_sharing_plus/social_sharing_plus.dart'; // Import the sha
 class HomePage extends StatefulWidget {
   final List<CameraDescription> cameras;
 
-  const HomePage({Key? key, required this.cameras}) : super(key: key);
+  const HomePage({super.key, required this.cameras});
 
   @override
   State<HomePage> createState() => _HomePageState();
